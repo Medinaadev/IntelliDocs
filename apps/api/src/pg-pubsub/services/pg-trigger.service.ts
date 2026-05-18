@@ -1,0 +1,311 @@
+import { Inject, Injectable, Logger } from '@nestjs/common';
+import { createHash } from 'crypto';
+import {
+    ListenerDiscovery,
+    PG_PUBSUB_CONFIG,
+    PG_PUBSUB_QUEUE_SCHEMA,
+    PG_PUBSUB_QUEUE_TABLE,
+    PgPubSubConfig,
+    TriggerMetadata,
+} from '../pg-pubsub.types';
+import { assertSafeIdentifier } from '../pg-pubsub.utils';
+import { PgConnectionPoolService } from './pg-connection-pool.service';
+
+@Injectable()
+export class PgTriggerService {
+    private readonly logger = new Logger(PgTriggerService.name);
+    private readonly metaSchema: string;
+    private readonly metaTable = 'pg_pubsub_trigger_meta';
+
+    constructor(
+        private readonly pgPool: PgConnectionPoolService,
+        @Inject(PG_PUBSUB_CONFIG) private readonly config: PgPubSubConfig,
+    ) {
+        this.metaSchema = config.queue?.schema ?? PG_PUBSUB_QUEUE_SCHEMA;
+    }
+
+    async setupTriggers(discovery: ListenerDiscovery): Promise<void> {
+        await this.ensureMetaTable();
+
+        const storedHashes = await this.loadStoredHashes();
+        const existingTriggers = await this.listTriggers();
+
+        const desiredMap = new Map<string, TriggerMetadata>();
+
+        discovery.listeners.forEach((listener) => {
+            assertSafeIdentifier(
+                listener.schema,
+                `listener schema for table ${listener.table}`,
+            );
+            assertSafeIdentifier(listener.table, 'listener table');
+
+            const name = `${this.config.triggerPrefix}_${listener.table.toLowerCase()}`;
+            desiredMap.set(name, {
+                table: listener.table,
+                schema: listener.schema,
+                name,
+                events: listener.events,
+                payloadFields: listener.payloadFields,
+            });
+        });
+
+        const existingSet = new Set(existingTriggers.map((t) => t.name));
+
+        const toRemove = existingTriggers.filter(
+            (t) => !desiredMap.has(t.name),
+        );
+
+        const toUpsert: TriggerMetadata[] = [];
+        desiredMap.forEach((desired) => {
+            const desiredHash = this.computeTriggerHash(
+                desired,
+                discovery.propNameToColumnNames,
+            );
+            const storedHash = storedHashes.get(desired.name);
+            const triggerExists = existingSet.has(desired.name);
+
+            if (!triggerExists || storedHash !== desiredHash) {
+                toUpsert.push(desired);
+            } else {
+                this.logger.debug(
+                    `Trigger ${desired.name} unchanged, skipping`,
+                );
+            }
+        });
+
+        if (toUpsert.length > 0) {
+            await this.createTriggers(
+                toUpsert,
+                discovery.propNameToColumnNames,
+            );
+        } else if (desiredMap.size > 0) {
+            this.logger.log('All triggers are up-to-date, no DDL needed');
+        }
+
+        if (toRemove.length > 0) {
+            await this.dropTriggers(toRemove);
+        }
+    }
+
+    computeTriggerHash(
+        trigger: TriggerMetadata,
+        propNameToColumnNames: Record<string, Map<string, string>>,
+    ): string {
+        const events = trigger.events?.length
+            ? [...trigger.events].sort()
+            : ['DELETE', 'INSERT', 'UPDATE'];
+
+        const columns = propNameToColumnNames[trigger.table];
+        const resolvedPayloadFields = trigger.payloadFields?.length
+            ? trigger.payloadFields
+                  .map((field) => columns?.get(field) ?? field)
+                  .sort()
+            : [];
+
+        const hashInput = JSON.stringify({
+            events,
+            payloadFields: resolvedPayloadFields,
+            schema: trigger.schema,
+            table: trigger.table,
+            triggerPrefix: this.config.triggerPrefix,
+            queueSchema: this.config.queue?.schema ?? PG_PUBSUB_QUEUE_SCHEMA,
+            queueTable: this.config.queue?.table ?? PG_PUBSUB_QUEUE_TABLE,
+        });
+
+        return createHash('md5').update(hashInput).digest('hex');
+    }
+
+    private async ensureMetaTable(): Promise<void> {
+        await this.pgPool.query(`
+      CREATE TABLE IF NOT EXISTS "${this.metaSchema}"."${this.metaTable}" (
+        trigger_name TEXT PRIMARY KEY,
+        config_hash TEXT NOT NULL
+      )
+    `);
+    }
+
+    private async loadStoredHashes(): Promise<Map<string, string>> {
+        const rows = await this.pgPool.query<{
+            trigger_name: string;
+            config_hash: string;
+        }>(`
+      SELECT trigger_name, config_hash
+      FROM "${this.metaSchema}"."${this.metaTable}"
+    `);
+        const map = new Map<string, string>();
+        rows?.forEach((r) => map.set(r.trigger_name, r.config_hash));
+        return map;
+    }
+
+    private async listTriggers(): Promise<TriggerMetadata[]> {
+        const triggers = await this.pgPool.query<{
+            name: string;
+            schema: string;
+            table: string;
+        }>(
+            `
+      SELECT DISTINCT
+        trigger_name as name,
+        trigger_schema as schema,
+        event_object_table as table
+      FROM information_schema.triggers
+      WHERE trigger_name LIKE $1
+      `,
+            [`${this.config.triggerPrefix}_%`],
+        );
+        return (triggers ?? []).map((t) => ({
+            name: t.name,
+            schema: t.schema,
+            table: t.table,
+        }));
+    }
+
+    private async dropTriggers(triggers: TriggerMetadata[]): Promise<void> {
+        if (!triggers.length) return;
+
+        this.logger.log(
+            `Dropping triggers:\n${triggers.map((t) => `${t.schema}.${t.table}.${t.name}`).join(',\n')}`,
+        );
+
+        await this.pgPool.query(
+            triggers
+                .map(
+                    (t) =>
+                        `DROP FUNCTION IF EXISTS "${t.schema}"."${t.name}" CASCADE`,
+                )
+                .join('; '),
+        );
+
+        const names = triggers.map((t) => t.name);
+        await this.pgPool.query(
+            `DELETE FROM "${this.metaSchema}"."${this.metaTable}" WHERE trigger_name = ANY($1)`,
+            [names],
+        );
+    }
+
+    private async createTriggers(
+        triggers: TriggerMetadata[],
+        propNameToColumnNames: Record<string, Map<string, string>>,
+    ): Promise<void> {
+        if (!triggers.length) return;
+
+        this.logger.log(
+            `Upserting triggers:\n${triggers.map((t) => `${t.schema}.${t.table}.${t.name}`).join(',\n')}`,
+        );
+
+        await Promise.all(
+            triggers.map(async (t) => {
+                const table = `"${t.schema}"."${t.table}"`;
+                const columns = propNameToColumnNames[t.table];
+                const queueSchema =
+                    this.config.queue?.schema ?? PG_PUBSUB_QUEUE_SCHEMA;
+                const queueTable =
+                    this.config.queue?.table ?? PG_PUBSUB_QUEUE_TABLE;
+
+                const buildJson = (alias: string) => {
+                    if (!t.payloadFields?.length)
+                        return `row_to_json(${alias})`;
+                    const selects = t.payloadFields
+                        .map(
+                            (field) =>
+                                `'${columns.get(field)}', ${alias}."${columns.get(field)}"`,
+                        )
+                        .join(', ');
+                    return `json_build_object(${selects})`;
+                };
+
+                const events = t.events?.length
+                    ? t.events
+                    : ['INSERT', 'UPDATE', 'DELETE'];
+                const hash = this.computeTriggerHash(t, propNameToColumnNames);
+
+                await this.pgPool.query(`
+          CREATE OR REPLACE FUNCTION "${t.schema}"."${t.name}"()
+          RETURNS TRIGGER AS $BODY$
+          DECLARE
+            payload JSON;
+            inserted_id INTEGER;
+          BEGIN
+            IF current_setting('pg_pubsub.disabled', true) = 'true' THEN
+              IF (TG_OP = 'DELETE') THEN RETURN OLD; END IF;
+              RETURN NEW;
+            END IF;
+
+            IF (TG_OP = 'DELETE') THEN
+              payload := json_build_object(
+                'id', gen_random_uuid(),
+                'event', TG_OP,
+                'schema', TG_TABLE_SCHEMA,
+                'table', TG_TABLE_NAME,
+                'data', ${buildJson('OLD')}
+              );
+            ELSIF (TG_OP = 'UPDATE') THEN
+              payload := json_build_object(
+                'id', gen_random_uuid(),
+                'event', TG_OP,
+                'schema', TG_TABLE_SCHEMA,
+                'table', TG_TABLE_NAME,
+                'data', json_build_object(
+                  'new', ${buildJson('NEW')},
+                  'old', ${buildJson('OLD')}
+                )
+              );
+            ELSE
+              payload := json_build_object(
+                'id', gen_random_uuid(),
+                'event', TG_OP,
+                'schema', TG_TABLE_SCHEMA,
+                'table', TG_TABLE_NAME,
+                'data', ${buildJson('NEW')}
+              );
+            END IF;
+
+            INSERT INTO "${queueSchema}"."${queueTable}" (channel, payload)
+            VALUES ('${this.config.triggerPrefix}', payload)
+            RETURNING id INTO inserted_id;
+
+            PERFORM pg_notify('${this.config.triggerPrefix}', inserted_id::text);
+
+            RETURN COALESCE(NEW, OLD);
+          END;
+          $BODY$ LANGUAGE plpgsql;
+
+          DROP TRIGGER IF EXISTS "${t.name}" ON ${table};
+        `);
+
+                const tableExists = await this.pgPool.query<{
+                    exists: boolean;
+                }>(
+                    `
+          SELECT EXISTS (
+            SELECT 1 FROM information_schema.tables
+            WHERE table_schema = $1 AND table_name = $2
+          ) as exists
+          `,
+                    [t.schema, t.table],
+                );
+
+                if (tableExists?.[0]?.exists) {
+                    await this.pgPool.query(`
+            CREATE TRIGGER "${t.name}"
+            AFTER ${events.join(' OR ')} ON ${table}
+            FOR EACH ROW EXECUTE FUNCTION "${t.schema}"."${t.name}"()
+          `);
+
+                    await this.pgPool.query(
+                        `
+            INSERT INTO "${this.metaSchema}"."${this.metaTable}" (trigger_name, config_hash)
+            VALUES ($1, $2)
+            ON CONFLICT (trigger_name) DO UPDATE SET config_hash = $2
+            `,
+                        [t.name, hash],
+                    );
+                } else {
+                    this.logger.warn(
+                        `Table ${table} does not exist yet, trigger ${t.name} will be created on next restart`,
+                    );
+                }
+            }),
+        );
+    }
+}

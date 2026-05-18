@@ -1,0 +1,571 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "cjs"
+}
+
+generator gen {
+  provider = "prisma-client-js"
+}
+
+// generator prismaClassGenerator {
+//   provider = "prisma-class-generator"
+//   output   = "../src/generated/prisma-class"
+//   dryRun   = "false"
+// }
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Account {
+  id                 String    @id @default(cuid())
+  userId             String
+  providerType       String
+  providerAccountId  String
+  refreshToken       String?
+  accessToken        String?
+  accessTokenExpires DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  user               User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([providerType, providerAccountId])
+}
+
+model Session {
+  id                  String              @id @default(cuid())
+  userId              String
+  accessToken         String              @unique
+  refreshToken        String              @unique
+  accessTokenExpires  DateTime
+  refreshTokenExpires DateTime
+  rotationCounter     Int                 @default(0)
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+  user                User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  refreshTokenReuses  RefreshTokenReuse[]
+}
+
+model RefreshTokenReuse {
+  id         String   @id @default(cuid())
+  sessionId  String
+  oldToken   String   @unique
+  detectedAt DateTime @default(now())
+
+  session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  passwordHash  String?
+
+  stripeCustomerId String? @unique
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  accounts               Account[]
+  sessions               Session[]
+  verificationRequests   VerificationRequest[]
+  workspaceMemberRoles   WorkspaceMemberRole[]
+  workspaceMembers       WorkspaceMember[]
+  workspaceSubscriptions WorkspaceSubscription[]
+  auditLogs              AuditLog[]
+  invitationsCreated     WorkspaceInvitation[] @relation("InvitationsCreated")
+
+  // Relaciones con archivos (versiones subidas)
+  filesUploaded        File[]        @relation("FileUploadedBy")
+  filesMoved           File[]        @relation("FileMovedBy")
+  fileVersionsUploaded FileVersion[] @relation("FileVersionUploadedBy")
+  foldersCreated       Folder[]      @relation("FolderCreatedBy")
+}
+
+model VerificationRequest {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expires   DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+enum SubscriptionStatus {
+  incomplete
+  incomplete_expired
+  trialing
+  active
+  past_due
+  canceled
+  unpaid
+  paused
+}
+
+enum PlanTier {
+  free
+  pro
+  business
+  enterprise
+}
+
+model Workspace {
+  id    String  @id @default(cuid())
+  name  String
+  image String?
+
+  plan         PlanTier @default(free)
+  seatsLimit   Int      @default(5)
+  storageLimit Int      @default(1) // Storage limit in GB
+
+  members      WorkspaceMember[]
+  invitations  WorkspaceInvitation[]
+  subscription WorkspaceSubscription?
+
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  workspaceRoles WorkspaceRole[]
+  folders        Folder[]
+  files          File[]
+}
+
+enum InvitationStatus {
+  pending
+  accepted
+  cancelled
+}
+
+model WorkspaceInvitation {
+  id    String           @id @default(cuid())
+  email String
+  token String           @unique @default(cuid())
+  status InvitationStatus @default(pending)
+
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  invitedById String
+  invitedBy   User   @relation("InvitationsCreated", fields: [invitedById], references: [id])
+
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@unique([workspaceId, email])
+  @@index([token])
+  @@index([workspaceId])
+}
+
+model WorkspaceMember {
+  id      String  @id @default(cuid())
+  isOwner Boolean @default(false)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  // Es el usuario que hizo la suscripción, no necesariamente el dueño del workspace
+  isSubscriber Boolean @default(false)
+
+  // Para llevar un control de la última vez que el usuario estuvo activo en el workspace
+  lastActiveAt DateTime @default(now())
+
+  roles WorkspaceMemberRole[]
+
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+  folderUserPermissions FolderUserPermission[]
+
+  @@unique([workspaceId, userId])
+  @@index([workspaceId])
+}
+
+model WorkspaceRole {
+  id          String @id @default(cuid())
+  workspaceId String
+  name        String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  workspace             Workspace              @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  permissions           WorkspacePermission[]
+  memberRoles           WorkspaceMemberRole[]
+  folderRolePermissions FolderRolePermission[]
+
+  @@unique([workspaceId, name])
+  @@index([workspaceId])
+}
+
+model WorkspacePermission {
+  id         String @id @default(cuid())
+  permission String
+
+  roleId String
+  role   WorkspaceRole @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([roleId, permission])
+  @@index([roleId])
+}
+
+model WorkspaceMemberRole {
+  id           String @id @default(cuid())
+  membershipId String
+  roleId       String
+
+  asignedById String
+  assignedAt  DateTime @default(now())
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  member     WorkspaceMember @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+  role       WorkspaceRole   @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  assignedBy User            @relation(fields: [asignedById], references: [id], onDelete: Cascade)
+
+  @@unique([membershipId, roleId])
+  @@index([membershipId])
+  @@index([roleId])
+}
+
+model WorkspaceSubscription {
+  id String @id @default(cuid())
+
+  workspaceId String    @unique
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  subscriberUserId String
+  subscriberUser   User   @relation(fields: [subscriberUserId], references: [id], onDelete: Cascade)
+
+  stripeSubscriptionId String @unique
+  stripePriceId        String
+  stripeProductId      String
+
+  status SubscriptionStatus
+  plan   PlanTier
+
+  seatsLimit   Int
+  storageLimit Int // Storage limit in GB
+
+  currentPeriodStart DateTime
+  currentPeriodEnd   DateTime
+  cancelAtPeriodEnd  Boolean   @default(false)
+  canceledAt         DateTime?
+  trialStart         DateTime?
+  trialEnd           DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([subscriberUserId])
+  @@index([stripeSubscriptionId])
+}
+
+// ---- Storage ----
+model Folder {
+  id          String  @id @default(cuid())
+  name        String
+  description String?
+  color       String? // Para UI: color de la carpeta
+
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  // Jerarquía
+  parentId String?
+  parent   Folder?  @relation("FolderChildren", fields: [parentId], references: [id])
+  children Folder[] @relation("FolderChildren")
+
+  // Orden dentro del parent (para drag & drop)
+  position Int @default(0)
+
+  createdById String?
+  createdBy   User?   @relation("FolderCreatedBy", fields: [createdById], references: [id])
+
+  // Papelera
+  trashedAt   DateTime?
+  trashedById String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  files           File[]
+  rolePermissions FolderRolePermission[]
+  userPermissions FolderUserPermission[]
+
+  @@index([workspaceId])
+  @@index([parentId])
+  @@index([workspaceId, parentId]) // Query más común: hijos de una carpeta en un workspace
+}
+
+// FILE SYSTEM — PERMISOS DE CARPETA
+// Acciones posibles sobre una carpeta / archivo
+enum FolderAction {
+  read
+  upload
+  delete
+  move
+  rename
+  share
+  manage_permissions // Permite a un usuario gestionar permisos de esa carpeta
+}
+
+// Permiso por ROL sobre una carpeta específica
+model FolderRolePermission {
+  id       String       @id @default(cuid())
+  folderId String
+  roleId   String
+  action   FolderAction
+
+  // Herencia: si true, el permiso se propaga a subcarpetas
+  inherited Boolean @default(true)
+
+  grantedAt   DateTime @default(now())
+  grantedById String?
+
+  folder Folder        @relation(fields: [folderId], references: [id], onDelete: Cascade)
+  role   WorkspaceRole @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([folderId, roleId, action])
+  @@index([folderId])
+  @@index([roleId])
+}
+
+// Permiso por USUARIO sobre una carpeta específica
+// Tiene prioridad sobre FolderRolePermission
+model FolderUserPermission {
+  id       String       @id @default(cuid())
+  folderId String
+  memberId String
+  action   FolderAction
+
+  // Herencia: si true, el permiso se propaga a subcarpetas
+  inherited Boolean @default(true)
+
+  // Permite negar explícitamente un permiso (override del rol)
+  denied Boolean @default(false)
+
+  grantedAt   DateTime @default(now())
+  grantedById String?
+
+  folder Folder          @relation(fields: [folderId], references: [id], onDelete: Cascade)
+  member WorkspaceMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@unique([folderId, memberId, action])
+  @@index([folderId])
+  @@index([memberId])
+}
+
+// FILE SYSTEM — ARCHIVOS
+enum FileStatus {
+  uploading // Upload en curso — no visible aún
+  processing // En MinIO, extrayendo texto / generando thumbnail
+  ready // Disponible
+  error // Falló el procesamiento
+  trashed // En papelera
+}
+
+model File {
+  id          String  @id @default(cuid())
+  name        String
+  description String?
+
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  folderId String
+  folder   Folder @relation(fields: [folderId], references: [id], onDelete: Cascade)
+
+  // Quién subió el archivo original
+  uploadedById String
+  uploadedBy   User   @relation("FileUploadedBy", fields: [uploadedById], references: [id])
+
+  // Control de movimiento
+  movedAt   DateTime?
+  movedById String?
+  movedBy   User?     @relation("FileMovedBy", fields: [movedById], references: [id])
+
+  // Puntero a la versión activa
+  activeVersionId String?      @unique
+  activeVersion   FileVersion? @relation("ActiveVersion", fields: [activeVersionId], references: [id])
+
+  // Metadatos del archivo activo (desnormalizados para queries rápidas sin JOIN)
+  mimeType   String?
+  size       BigInt? // En bytes
+  extension  String?
+  storageKey String? // Path en MinIO: workspaces/{wId}/files/{fileId}/{versionId}
+
+  status FileStatus @default(uploading)
+
+  // Papelera
+  trashedAt   DateTime?
+  trashedById String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  versions FileVersion[] @relation("FileVersions")
+  content  FileContent?
+  tags     FileTag[]
+
+  @@index([workspaceId])
+  @@index([folderId])
+  @@index([workspaceId, folderId])
+  @@index([status])
+  @@index([mimeType])
+}
+
+// FILE SYSTEM — VERSIONES
+model FileVersion {
+  id     String @id @default(cuid())
+  fileId String
+  file   File   @relation("FileVersions", fields: [fileId], references: [id], onDelete: Cascade)
+
+  versionNumber Int // 1, 2, 3...
+  label         String? // Etiqueta opcional: "v1.0", "Revisión final"
+  comment       String? // Comentario del upload
+
+  // Storage
+  storageKey String // Path inmutable en MinIO
+  mimeType   String
+  size       BigInt // En bytes
+  extension  String?
+  checksum   String? // SHA-256 para verificar integridad
+
+  uploadedById String
+  uploadedBy   User   @relation("FileVersionUploadedBy", fields: [uploadedById], references: [id])
+
+  createdAt DateTime @default(now())
+
+  // Relación inversa para activeVersion en File
+  activeVersionOf File? @relation("ActiveVersion")
+
+  @@unique([fileId, versionNumber])
+  @@index([fileId])
+}
+
+// FILE SYSTEM — CONTENIDO INDEXADO
+
+// Tabla separada para no penalizar queries sobre File con texto pesado
+model FileContent {
+  id     String @id @default(cuid())
+  fileId String @unique
+  file   File   @relation(fields: [fileId], references: [id], onDelete: Cascade)
+
+  // Texto extraído (PDF, DOCX, XLSX, OCR)
+  extractedText String?
+
+  // Full-text search con PostgreSQL
+  // Se actualiza con: UPDATE "FileContent" SET "searchVector" = to_tsvector('spanish', extracted_text)
+  // El índice GIN hace que las búsquedas sean O(log n)
+  searchVector Unsupported("tsvector")?
+
+  // Hueco para búsqueda semántica (pgvector) — activar cuando sea necesario
+  // embedding Unsupported("vector(1536)")?
+
+  // Metadatos del documento (número de páginas para PDFs, dimensiones para imágenes, etc.)
+  pageCount Int?
+  wordCount Int?
+  language  String? // Detectado automáticamente: 'spanish', 'english'...
+  metadata  Json?   // Metadatos extra: dimensiones de imagen, título/autor de PDF, etc.
+
+  // Control de indexación
+  extractedAt  DateTime?
+  indexedAt    DateTime?
+  extractError String? // Mensaje si falló la extracción
+
+  @@index([fileId])
+}
+
+// FILE SYSTEM — TAGS
+
+model Tag {
+  id          String  @id @default(cuid())
+  workspaceId String
+  name        String
+  color       String? // Hex color para UI
+
+  createdAt DateTime @default(now())
+
+  files FileTag[]
+
+  @@unique([workspaceId, name])
+  @@index([workspaceId])
+}
+
+model FileTag {
+  fileId String
+  tagId  String
+
+  file File @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  tag  Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@id([fileId, tagId])
+}
+
+// AUDITORÍA
+enum AuditAction {
+  // Carpetas
+  folder_created
+  folder_renamed
+  folder_moved
+  folder_deleted
+  folder_restored
+  folder_permission_granted
+  folder_permission_revoked
+
+  // Archivos
+  file_uploaded
+  file_downloaded
+  file_renamed
+  file_moved
+  file_deleted
+  file_restored
+  file_version_uploaded
+  file_version_restored
+  file_shared
+}
+
+model AuditLog {
+  id String @id @default(cuid())
+
+  workspaceId String
+  userId      String
+  user        User   @relation(fields: [userId], references: [id])
+
+  action AuditAction
+
+  // Entidad afectada
+  entityType String // 'file' | 'folder'
+  entityId   String
+  entityName String? // Snapshot del nombre en el momento del evento
+
+  // Metadatos adicionales en JSON libre
+  metadata Json?
+
+  ipAddress String?
+  userAgent String?
+
+  createdAt DateTime @default(now())
+
+  @@index([workspaceId])
+  @@index([userId])
+  @@index([entityId])
+  @@index([workspaceId, createdAt]) // Para queries de auditoría ordenadas por fecha
+}
