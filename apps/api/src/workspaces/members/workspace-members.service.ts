@@ -3,6 +3,7 @@ import {
     ConflictException,
     ForbiddenException,
     Injectable,
+    Logger,
     NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma.service';
@@ -14,6 +15,8 @@ const INVITATION_EXPIRES_HOURS = 72;
 
 @Injectable()
 export class WorkspaceMembersService {
+    private readonly logger = new Logger(WorkspaceMembersService.name);
+
     constructor(
         private readonly prisma: PrismaService,
         private readonly resend: ResendService,
@@ -203,37 +206,9 @@ export class WorkspaceMembersService {
         });
 
         if (emailError) {
-            const { error: fallbackError } = await this.resend.emails.send({
-                from: 'IntelliDocs <onboarding@resend.dev>',
-                to: email,
-                subject: `${inviter?.name ?? 'Alguien'} te ha invitado a ${workspace.name}`,
-                html: `
-                    <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px 24px">
-                        <h2 style="font-size:20px;font-weight:600;margin-bottom:8px">
-                            Invitación a ${workspace.name}
-                        </h2>
-                        <p style="color:#555;line-height:1.6;margin-bottom:24px">
-                            <strong>${inviter?.name ?? 'Un usuario'}</strong> te ha invitado a colaborar
-                            en el workspace <strong>${workspace.name}</strong> en IntelliDocs.
-                        </p>
-                        <a href="${inviteUrl}"
-                           style="display:inline-block;background:#000;color:#fff;text-decoration:none;
-                                  padding:12px 24px;border-radius:8px;font-weight:600;font-size:14px">
-                            Aceptar invitación
-                        </a>
-                        <p style="color:#999;font-size:12px;margin-top:24px">
-                            Este enlace expira en ${INVITATION_EXPIRES_HOURS} horas.
-                            Si no esperabas esta invitación, puedes ignorar este email.
-                        </p>
-                    </div>
-                `,
-            });
-
-            if (fallbackError) {
-                throw new Error(
-                    `No se pudo enviar el email de invitación: ${fallbackError.message}`,
-                );
-            }
+            this.logger.warn(
+                `Email de invitacion no enviado: ${emailError.message}`,
+            );
         }
 
         return { success: true, email };

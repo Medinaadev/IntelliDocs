@@ -434,15 +434,11 @@ export class AuthService {
         });
 
         if (error) {
-            this.logger.error('Error sending verification email:', error);
-
-            throw new HttpException(
-                'Error sending verification email',
-                HttpStatus.INTERNAL_SERVER_ERROR,
-            );
+            this.logger.warn(`Email de verificacion no enviado: ${error.message}`);
+        } else {
+            this.logger.debug('Verification email sent:', data);
         }
 
-        this.logger.debug('Verification email sent:', data);
         return { message: 'Verification email sent' };
     }
 
