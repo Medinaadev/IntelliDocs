@@ -46,10 +46,7 @@ import { ProcessingModule } from './processing/processing.module';
         // Conexión global de BullMQ con Redis
         BullModule.forRoot({
             connection: {
-                host: process.env.REDIS_HOST || 'localhost',
-                port: parseInt(process.env.REDIS_PORT || '6379', 10),
-                password: process.env.REDIS_PASSWORD || undefined,
-                username: process.env.REDIS_USERNAME || undefined,
+                url: process.env.REDIS_URL,
             },
         }),
         PgPubSubModule.forRoot({
