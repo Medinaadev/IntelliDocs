@@ -15,6 +15,7 @@ import { RealtimeModule } from './realtime/realtime.module';
 import { StorageModule } from './storage/storage.module';
 import { BullModule } from '@nestjs/bullmq';
 import { ProcessingModule } from './processing/processing.module';
+import Redis from 'ioredis';
 
 @Module({
     imports: [
@@ -45,9 +46,7 @@ import { ProcessingModule } from './processing/processing.module';
         ScheduleModule.forRoot(),
         // Conexión global de BullMQ con Redis
         BullModule.forRoot({
-            connection: {
-                url: process.env.REDIS_URL,
-            },
+            connection: new Redis(process.env.REDIS_URL + '?family=0'),
         }),
         PgPubSubModule.forRoot({
             databaseUrl: process.env.DATABASE_URL as string,
