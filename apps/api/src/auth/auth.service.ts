@@ -42,31 +42,46 @@ export class AuthService {
                     providerAccountId,
                 },
             },
-            include: {
-                user: true,
-            },
+            include: { user: true },
         });
 
-        if (account && account.user) {
+        if (account?.user) {
             return account.user;
         }
 
-        const user = await this.prisma.user.create({
+        // El email puede pertenecer a un usuario registrado con contraseña — vincular en vez de crear
+        const existingUser = await this.prisma.user.findUnique({
+            where: { email },
+        });
+
+        if (existingUser) {
+            await this.prisma.account.create({
+                data: {
+                    providerType,
+                    providerAccountId,
+                    userId: existingUser.id,
+                },
+            });
+            if (!existingUser.emailVerified) {
+                await this.prisma.user.update({
+                    where: { id: existingUser.id },
+                    data: { emailVerified: new Date() },
+                });
+            }
+            return existingUser;
+        }
+
+        return this.prisma.user.create({
             data: {
                 email,
                 name,
                 image,
                 emailVerified: new Date(),
                 accounts: {
-                    create: {
-                        providerType,
-                        providerAccountId,
-                    },
+                    create: { providerType, providerAccountId },
                 },
             },
         });
-
-        return user;
     }
 
     async validateUser(email: string, password: string): Promise<User> {
