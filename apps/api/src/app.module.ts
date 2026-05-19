@@ -17,6 +17,15 @@ import { BullModule } from '@nestjs/bullmq';
 import { ProcessingModule } from './processing/processing.module';
 import Redis from 'ioredis';
 
+const redisUrl = process.env.REDIS_URL as string;
+const redisTls = redisUrl?.startsWith('rediss://')
+    ? { tls: { rejectUnauthorized: false } }
+    : {};
+
+function makeRedis(extra: object = {}) {
+    return new Redis(redisUrl, { family: 0, ...redisTls, ...extra });
+}
+
 @Module({
     imports: [
         ConfigModule.forRoot(),
@@ -25,30 +34,25 @@ import Redis from 'ioredis';
                 {
                     name: 'short',
                     ttl: seconds(1),
-                    limit: 5, // 5 solicitudes por segundo
+                    limit: 5,
                 },
-
                 {
                     name: 'medium',
-                    ttl: seconds(20), // 20 segundos
-                    limit: 100, // 100 solicitudes por 30 segundos
+                    ttl: seconds(20),
+                    limit: 100,
                 },
-
                 {
                     name: 'long',
-                    ttl: seconds(60), // 1 minuto
-                    limit: 300, // 300 solicitudes por minuto
+                    ttl: seconds(60),
+                    limit: 300,
                 },
             ],
             errorMessage: 'Too many requests. Please try again later.',
-            storage: new ThrottlerStorageRedisService(),
+            storage: new ThrottlerStorageRedisService(makeRedis()),
         }),
         ScheduleModule.forRoot(),
-        // Conexión global de BullMQ con Redis
         BullModule.forRoot({
-            connection: new Redis(process.env.REDIS_URL + '?family=0', {
-                maxRetriesPerRequest: null,
-            }),
+            connection: makeRedis({ maxRetriesPerRequest: null }),
         }),
         PgPubSubModule.forRoot({
             databaseUrl: process.env.DATABASE_URL as string,
