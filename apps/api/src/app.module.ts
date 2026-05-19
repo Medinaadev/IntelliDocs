@@ -46,7 +46,10 @@ import Redis from 'ioredis';
         ScheduleModule.forRoot(),
         // Conexión global de BullMQ con Redis
         BullModule.forRoot({
-            connection: new Redis(process.env.REDIS_URL + '?family=0'),
+            connection: new Redis(process.env.REDIS_URL + '?family=0', {
+                maxRetriesPerRequest: null,
+                tls: { rejectUnauthorized: false },
+            }),
         }),
         PgPubSubModule.forRoot({
             databaseUrl: process.env.DATABASE_URL as string,
