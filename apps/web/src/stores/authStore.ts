@@ -142,7 +142,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
             if (provider === 'credentials' && (!email || !password)) {
                 return {
                     success: false,
-                    error: 'Email and password are required for credentials login',
+                    error: 'Email y contraseña son obligatorios',
                 }
             }
 
@@ -170,7 +170,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
                     expiresAt: response.expiresAt,
                 },
             })
-            window.location.href = redirectUri || '/'
+            window.location.href = redirectUri || '/workspaces'
             return { success: true }
         } catch (error) {
             console.error('Error during login:', error)
