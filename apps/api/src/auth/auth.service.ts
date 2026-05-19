@@ -304,19 +304,18 @@ export class AuthService {
     }
 
     setAuthCookies(res: Response, accessToken: string, refreshToken: string) {
-        // Guardar accessToken en cookie HttpOnly
+        const isProd = process.env.NODE_ENV === 'production';
         res.cookie('access_token', accessToken, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production', // Solo HTTPS en producción
-            sameSite: 'lax', // Protección CSRF
+            secure: isProd,
+            sameSite: isProd ? 'none' : 'lax',
             maxAge: jwtConstants.accessTokenExpiration,
         });
 
-        // Guardar refreshToken en cookie HttpOnly
         res.cookie('refresh_token', refreshToken, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production', // Solo HTTPS en producción
-            sameSite: 'lax', // Protección CSRF
+            secure: isProd,
+            sameSite: isProd ? 'none' : 'lax',
             maxAge: jwtConstants.refreshTokenExpiration,
         });
 
