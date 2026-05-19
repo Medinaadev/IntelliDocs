@@ -48,7 +48,7 @@ El proyecto nació de la asignatura de proyecto final de Aurora, que pedía hace
 
 ```bash
 # 1. Clonar el repositorio
-git clone <url-del-repo>
+git clone https://github.com/Medinaadev/IntelliDocs
 cd IntelliDocs
 
 # 2. Levantar la infraestructura (PostgreSQL, Redis, MinIO)
