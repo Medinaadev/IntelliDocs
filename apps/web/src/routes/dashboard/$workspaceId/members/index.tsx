@@ -1,5 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useRealtimeChannel } from '#/lib/realtime/useRealtimeChannel'
 import {
     membersQuery,
     invitationsQuery,
@@ -313,6 +314,16 @@ function RouteComponent() {
     const { workspaceId } = Route.useParams()
     const workspace = useWorkspaceStore((s) => s.workspace)
     const currentUserId = useWorkspaceStore((s) => s.workspace?.id) // temporal, hay que sacar el userId del store de auth
+    const qc = useQueryClient()
+
+    useRealtimeChannel({
+        channel: 'Members',
+        filters: { workspaceId },
+        onEvent: () => {
+            qc.invalidateQueries({ queryKey: ['members', workspaceId] })
+            qc.invalidateQueries({ queryKey: ['invitations', workspaceId] })
+        },
+    })
 
     const { data: members, isLoading: loadingMembers } = useQuery(membersQuery(workspaceId))
     const { data: invitations, isLoading: loadingInvites } = useQuery(invitationsQuery(workspaceId))

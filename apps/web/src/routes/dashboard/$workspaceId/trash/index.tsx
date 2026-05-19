@@ -1,5 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useRealtimeChannel } from '#/lib/realtime/useRealtimeChannel'
 import {
     trashQuery,
     type TrashedFile,
@@ -301,6 +302,14 @@ function TrashRow({
 function RouteComponent() {
     const { workspaceId } = Route.useParams()
     const qc = useQueryClient()
+
+    useRealtimeChannel({
+        channel: 'Drive',
+        filters: { workspaceId },
+        onEvent: () => {
+            qc.invalidateQueries({ queryKey: ['trash', workspaceId] })
+        },
+    })
 
     const { data, isLoading } = useQuery(trashQuery(workspaceId))
 

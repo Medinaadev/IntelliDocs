@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useRealtimeChannel } from '#/lib/realtime/useRealtimeChannel'
 import { tagsQuery, type WorkspaceTag } from '#/lib/queries/tags'
 import { api } from '#/lib/api'
 import { useState } from 'react'
@@ -332,6 +333,16 @@ function TagRowSkeleton() {
 
 function RouteComponent() {
     const { workspaceId } = Route.useParams()
+    const qc = useQueryClient()
+
+    useRealtimeChannel({
+        channel: 'Tags',
+        filters: { workspaceId },
+        onEvent: () => {
+            qc.invalidateQueries({ queryKey: ['tags', workspaceId] })
+        },
+    })
+
     const { data: tags, isLoading } = useQuery(tagsQuery(workspaceId))
 
     const [createOpen, setCreateOpen] = useState(false)

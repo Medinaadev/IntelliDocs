@@ -7,7 +7,8 @@ import { driveContentQuery } from '#/lib/queries/drive'
 import { tagsQuery, type WorkspaceTag } from '#/lib/queries/tags'
 
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useRealtimeChannel } from '#/lib/realtime/useRealtimeChannel'
 import { zodValidator } from '@tanstack/zod-adapter'
 import { ChevronDown, FolderUp, Loader2, Search, Tag, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
@@ -35,6 +36,15 @@ function RouteComponent() {
     const { workspaceId } = Route.useParams()
     const { folderId: currentFolderId, q, tagId } = Route.useSearch()
     const navigate = useNavigate({ from: Route.fullPath })
+    const queryClient = useQueryClient()
+
+    useRealtimeChannel({
+        channel: 'Drive',
+        filters: { workspaceId },
+        onEvent: () => {
+            queryClient.invalidateQueries({ queryKey: ['drive', workspaceId] })
+        },
+    })
 
     // input local que se sincroniza con la url tras 350ms
     const [inputValue, setInputValue] = useState(q ?? '')
