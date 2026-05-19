@@ -323,9 +323,15 @@ export class AuthService {
     }
 
     clearAuthCookies(res: Response) {
-        res.clearCookie('access_token');
-        res.clearCookie('refresh_token');
-        this.logger.debug('Auth cookies cleared successfully'); // Log de cookies eliminadas
+        const isProd = process.env.NODE_ENV === 'production';
+        const options = {
+            httpOnly: true,
+            secure: isProd,
+            sameSite: isProd ? ('none' as const) : ('lax' as const),
+        };
+        res.clearCookie('access_token', options);
+        res.clearCookie('refresh_token', options);
+        this.logger.debug('Auth cookies cleared successfully');
     }
 
     async register(name: string, email: string, password: string) {

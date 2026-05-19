@@ -25,7 +25,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { minutes, Throttle } from '@nestjs/throttler';
 import { Cookies } from 'src/decorators/cookies.decorator';
 import { getFrontendUrl } from 'src/lib/frontend';
-import { Jwt, JwtPayload, UseJwt } from './decorators/jwt.decorator';
+import { Jwt, JwtPayload, JwtSession, JwtSessionType, UseJwt } from './decorators/jwt.decorator';
 
 @Controller('auth')
 export class AuthController {
@@ -149,7 +149,9 @@ export class AuthController {
     }
 
     @Post('logout')
-    logout(@Request() req: JwtRequest, @Res() res: Response) {
+    @UseJwt()
+    async logout(@JwtSession() session: JwtSessionType, @Res() res: Response) {
+        await this.authService.revokeSession(session.id);
         this.authService.clearAuthCookies(res);
         return res.json({ success: true });
     }
