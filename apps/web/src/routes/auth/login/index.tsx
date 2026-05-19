@@ -57,7 +57,7 @@ function LoginComponent() {
 
             if (success) {
                 toast.success('¡Inicio de sesión exitoso!', { id: toastId })
-                navigate({ to: redirect || '/' })
+                navigate({ to: redirect || '/workspaces' })
             } else {
                 toast.error(error || 'Error al iniciar sesión', { id: toastId })
             }
