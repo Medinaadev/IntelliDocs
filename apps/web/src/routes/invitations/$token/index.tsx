@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { invitationInfoQuery } from '#/lib/queries/members'
 import { api } from '#/lib/api'
@@ -6,6 +6,7 @@ import { Button } from '#/components/ui/button'
 import { DatabaseZap, Loader2, MailCheck, ShieldAlert, CheckCircle2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useWorkspacesStore } from '#/stores/workspacesStore'
+import { useAuthStore } from '#/stores/authStore'
 
 export const Route = createFileRoute('/invitations/$token/')({
     component: RouteComponent,
@@ -15,6 +16,7 @@ function RouteComponent() {
     const { token } = Route.useParams()
     const navigate = useNavigate()
     const fetchWorkspaces = useWorkspacesStore((s) => s.fetchWorkspaces)
+    const session = useAuthStore((s) => s.session)
 
     const { data, isLoading, error } = useQuery(invitationInfoQuery(token))
 
@@ -129,7 +131,7 @@ function RouteComponent() {
                         <Button
                             className="w-full"
                             onClick={() => acceptMutation.mutate()}
-                            disabled={acceptMutation.isPending}
+                            disabled={!session || acceptMutation.isPending}
                         >
                             {acceptMutation.isPending
                                 ? <Loader2 size={15} className="animate-spin" />
@@ -142,13 +144,19 @@ function RouteComponent() {
                     </div>
                 </div>
 
-                <p className="text-xs text-muted-foreground text-center">
-                    Si no tienes cuenta, necesitarás{' '}
-                    <a href="/auth/register" className="underline underline-offset-2">
-                        registrarte
-                    </a>{' '}
-                    con el mismo email antes de aceptar.
-                </p>
+                {!session && (
+                    <p className="text-xs text-muted-foreground text-center">
+                        Debes{' '}
+                        <Link to="/auth/login" className="underline underline-offset-2">
+                            iniciar sesión
+                        </Link>
+                        {' '}o{' '}
+                        <Link to="/auth/register" className="underline underline-offset-2">
+                            registrarte
+                        </Link>
+                        {' '}con <strong>{data.email}</strong> para aceptar.
+                    </p>
+                )}
             </div>
         </main>
     )
