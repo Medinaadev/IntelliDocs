@@ -11,6 +11,7 @@ import confetti from 'canvas-confetti'
 
 export const Route = createFileRoute('/dashboard/$workspaceId/plans/')({
     component: PlansPage,
+    head: () => ({ title: 'Planes — IntelliDocs' }),
 })
 
 type PlanTier = 'free' | 'pro' | 'enterprise' | 'custom'

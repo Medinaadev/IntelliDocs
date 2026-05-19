@@ -23,6 +23,7 @@ import { cn } from '#/lib/utils'
 
 export const Route = createFileRoute('/dashboard/$workspaceId/activity/')({
     component: RouteComponent,
+    head: () => ({ title: 'Actividad — IntelliDocs' }),
 })
 
 // metadatos de cada tipo de accion (label, icono, color)

@@ -30,6 +30,7 @@ const driveSearchParams = z.object({
 export const Route = createFileRoute('/dashboard/$workspaceId/drive/')({
     component: RouteComponent,
     validateSearch: zodValidator(driveSearchParams),
+    head: () => ({ title: 'Drive — IntelliDocs' }),
 })
 
 function RouteComponent() {

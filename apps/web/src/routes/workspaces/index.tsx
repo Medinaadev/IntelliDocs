@@ -16,6 +16,7 @@ export const Route = createFileRoute('/workspaces/')({
         await protectedRoute(location)
     },
     validateSearch: zodValidator(workspaceSearchSchema),
+    head: () => ({ title: 'Mis workspaces — IntelliDocs' }),
 })
 
 function RouteComponent() {

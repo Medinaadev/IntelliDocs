@@ -25,6 +25,7 @@ import { Skeleton } from '#/components/ui/skeleton'
 
 export const Route = createFileRoute('/dashboard/$workspaceId/processing/')({
     component: RouteComponent,
+    head: () => ({ title: 'Procesamiento — IntelliDocs' }),
 })
 
 // helpers de tiempo y formato

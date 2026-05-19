@@ -33,6 +33,7 @@ import { cn } from '#/lib/utils'
 
 export const Route = createFileRoute('/dashboard/$workspaceId/labels/')({
     component: RouteComponent,
+    head: () => ({ title: 'Etiquetas — IntelliDocs' }),
 })
 
 // dialogo para crear o editar un tag

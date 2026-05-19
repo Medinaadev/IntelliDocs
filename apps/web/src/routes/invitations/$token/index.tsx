@@ -10,6 +10,7 @@ import { useAuthStore } from '#/stores/authStore'
 
 export const Route = createFileRoute('/invitations/$token/')({
     component: RouteComponent,
+    head: () => ({ title: 'Invitación — IntelliDocs' }),
 })
 
 function RouteComponent() {

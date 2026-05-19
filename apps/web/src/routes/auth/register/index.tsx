@@ -16,6 +16,7 @@ import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/auth/register/')({
     component: RouteComponent,
+    head: () => ({ title: 'Registrarse — IntelliDocs' }),
 })
 
 interface RegisterFormValues {

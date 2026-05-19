@@ -1,4 +1,4 @@
-import { Link, Outlet, createRootRoute } from '@tanstack/react-router'
+import { HeadContent, Link, Outlet, createRootRoute } from '@tanstack/react-router'
 
 import '../styles.css'
 import { LightRays } from '#/components/ui/light-rays'
@@ -10,6 +10,9 @@ import { useRealtime } from '#/lib/realtime/useRealtime'
 export const Route = createRootRoute({
     component: RootComponent,
     notFoundComponent: NotFoundPage,
+    head: () => ({
+        title: 'IntelliDocs',
+    }),
     beforeLoad: async () => {
         useThemeStore.getState().initTheme()
     },
@@ -19,6 +22,7 @@ function RootComponent() {
 
     return (
         <Providers>
+            <HeadContent />
             <div className="fixed w-screen h-screen top-0 left-0 -z-10">
                 <LightRays />
             </div>

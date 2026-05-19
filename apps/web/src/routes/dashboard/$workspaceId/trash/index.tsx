@@ -39,6 +39,7 @@ import { Skeleton } from '#/components/ui/skeleton'
 
 export const Route = createFileRoute('/dashboard/$workspaceId/trash/')({
     component: RouteComponent,
+    head: () => ({ title: 'Papelera — IntelliDocs' }),
 })
 
 // helpers de fechas

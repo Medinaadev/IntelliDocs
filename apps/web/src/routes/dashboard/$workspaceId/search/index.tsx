@@ -21,6 +21,7 @@ import { cn } from '#/lib/utils'
 
 export const Route = createFileRoute('/dashboard/$workspaceId/search/')({
     component: RouteComponent,
+    head: () => ({ title: 'Búsqueda — IntelliDocs' }),
 })
 
 function initials(name: string) {

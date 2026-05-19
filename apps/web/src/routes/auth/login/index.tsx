@@ -22,6 +22,7 @@ const loginSchema = z.object({
 export const Route = createFileRoute('/auth/login/')({
     component: LoginComponent,
     validateSearch: zodValidator(loginSchema),
+    head: () => ({ title: 'Iniciar sesión — IntelliDocs' }),
 })
 
 interface LoginFormValues {

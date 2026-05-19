@@ -12,7 +12,7 @@ import {
 import { AvatarImage, Avatar, AvatarFallback } from '../ui/avatar'
 import { AnimatedThemeToggler } from '../ui/animated-theme-toggler'
 import { useHeaderStore } from '#/stores/headerStore'
-import { LayoutDashboard, LayoutGrid, LogOut, Menu, UserRound } from 'lucide-react'
+import { LayoutDashboard, LayoutGrid, LogOut, Menu, MessageSquareWarning, UserRound } from 'lucide-react'
 import { cn } from '#/lib/utils'
 import { useWorkspaceStore } from '#/stores/workspaceStore'
 import { WorkspaceBadge } from '../workspaces/WorkspaceBadge'
@@ -123,6 +123,13 @@ const Header = () => {
                                     >
                                         <LayoutGrid />
                                         Workspaces
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                        className="hover:bg-black/5"
+                                        onClick={() => window.open('https://github.com/Medinaadev/IntelliDocs/issues/new', '_blank')}
+                                    >
+                                        <MessageSquareWarning />
+                                        Reportar problema
                                     </DropdownMenuItem>
                                     <DropdownMenuItem
                                         variant="destructive"

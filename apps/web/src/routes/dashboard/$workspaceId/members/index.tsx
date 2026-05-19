@@ -38,6 +38,7 @@ import { cn } from '#/lib/utils'
 
 export const Route = createFileRoute('/dashboard/$workspaceId/members/')({
     component: RouteComponent,
+    head: () => ({ title: 'Miembros — IntelliDocs' }),
 })
 
 // utilidades varias

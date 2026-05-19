@@ -13,6 +13,7 @@ const verifyEmailSchema = z.object({
 export const Route = createFileRoute('/auth/verify-email/')({
     component: VerifyEmailComponent,
     validateSearch: zodValidator(verifyEmailSchema),
+    head: () => ({ title: 'Verificar email — IntelliDocs' }),
 })
 
 function VerifyEmailComponent() {

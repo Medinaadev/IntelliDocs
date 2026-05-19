@@ -22,6 +22,7 @@ import { cn } from '#/lib/utils'
 
 export const Route = createFileRoute('/dashboard/$workspaceId/')({
     component: RouteComponent,
+    head: () => ({ title: 'Resumen — IntelliDocs' }),
 })
 
 // helpers de formato

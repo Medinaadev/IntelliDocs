@@ -33,6 +33,7 @@ import { formatFileSize, FILE_LIMITS } from '#/lib/file-size'
 
 export const Route = createFileRoute('/dashboard/$workspaceId/settings/')({
     component: RouteComponent,
+    head: () => ({ title: 'Configuración — IntelliDocs' }),
 })
 
 // badge del plan
