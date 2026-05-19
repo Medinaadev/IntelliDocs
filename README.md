@@ -1,159 +1,96 @@
-# Turborepo starter
+# IntelliDocs
 
-This Turborepo starter is maintained by the Turborepo core team.
+IntelliDocs es una aplicación para que equipos gestionen sus documentos. Puedes subir archivos, organizarlos en carpetas, buscar dentro del contenido y ver los cambios de tus compañeros en tiempo real, todo desde el navegador.
 
-## Using this example
+El proyecto nació de la asignatura de proyecto final de Aurora, que pedía hacer la documentación de una aplicación. En vez de documentar algo que no existía, decidí construirla de verdad, y aproveché la asignatura de Desarrollo web en entorno cliente para darle forma completa.
 
-Run the following command:
+**Producción:**
+- Frontend: https://intellidocs-web.vercel.app
+- API: https://intellidocs-api.up.railway.app
 
-```sh
-npx create-turbo@latest
+---
+
+## Stack
+
+| Parte | Tecnologías |
+|---|---|
+| Frontend | React 19, TanStack Router, React Query, Zustand, Tailwind CSS, shadcn/ui |
+| Backend | NestJS, Prisma, PostgreSQL, Redis, BullMQ, Socket.IO |
+| Almacenamiento | Cloudflare R2 (compatible S3) |
+| Pagos | Stripe |
+| Email | Resend |
+
+---
+
+## Despliegue
+
+| Componente | Servicio |
+|---|---|
+| Frontend | Vercel — https://intellidocs-web.vercel.app |
+| Backend | Railway — https://intellidocs-api.up.railway.app |
+| Base de datos | Railway PostgreSQL plugin |
+| Redis | Railway Redis plugin |
+| Almacenamiento | Cloudflare R2 |
+| Email | Resend |
+| Pagos | Stripe (modo test) |
+
+---
+
+## Ejecutar en local
+
+### Requisitos
+
+- Node.js ≥ 22
+- pnpm — `npm install -g pnpm`
+- Docker y Docker Compose
+
+### Pasos
+
+```bash
+# 1. Clonar el repositorio
+git clone <url-del-repo>
+cd IntelliDocs
+
+# 2. Levantar la infraestructura (PostgreSQL, Redis, MinIO)
+docker-compose up -d
+
+# 3. Instalar dependencias
+pnpm install
+
+# 4. Configurar variables de entorno
+cp apps/api/.env.example apps/api/.env
+
+# 5. Ejecutar migraciones
+cd apps/api && pnpm prisma migrate dev && cd ../..
+
+# 6. Arrancar todo
+pnpm dev
 ```
 
-## What's inside?
+- Frontend: http://localhost:5173
+- API: http://localhost:3000
+- MinIO: http://localhost:9001 (usuario: `minioadmin`, contraseña: `minioadmin`)
 
-This Turborepo includes the following packages/apps:
+---
 
-### Apps and Packages
+## Documentación
 
-- `docs`: a [Next.js](https://nextjs.org/) app
-- `web`: another [Next.js](https://nextjs.org/) app
-- `@intellidocs/ui`: a stub React component library shared by both `web` and `docs` applications
-- `@intellidocs/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
-- `@intellidocs/typescript-config`: `tsconfig.json`s used throughout the monorepo
+- [`docs/resumen-ejecutivo.md`](docs/resumen-ejecutivo.md) — descripción técnica del proyecto
+- [`docs/guia-usuario.md`](docs/guia-usuario.md) — guía de uso de la aplicación
+- [`docs/decisiones-tecnicas.md`](docs/decisiones-tecnicas.md) — por qué se eligió cada tecnología
 
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
+---
 
-### Utilities
+## Estructura del monorepo
 
-This Turborepo has some additional tools already setup for you:
-
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
-
-### Build
-
-To build all apps and packages, run the following command:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
-
-```sh
-cd my-turborepo
-turbo build
 ```
-
-Without global `turbo`, use your package manager:
-
-```sh
-cd my-turborepo
-npx turbo build
-yarn dlx turbo build
-pnpm exec turbo build
+IntelliDocs/
+├── apps/
+│   ├── api/          # Backend NestJS
+│   └── web/          # Frontend React + Vite
+├── packages/
+│   ├── types/        # Tipos TypeScript compartidos
+│   └── ui/           # Componentes compartidos
+├── docker-compose.yml
+└── turbo.json
 ```
-
-You can build a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
-
-```sh
-turbo build --filter=docs
-```
-
-Without global `turbo`:
-
-```sh
-npx turbo build --filter=docs
-yarn exec turbo build --filter=docs
-pnpm exec turbo build --filter=docs
-```
-
-### Develop
-
-To develop all apps and packages, run the following command:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
-
-```sh
-cd my-turborepo
-turbo dev
-```
-
-Without global `turbo`, use your package manager:
-
-```sh
-cd my-turborepo
-npx turbo dev
-yarn exec turbo dev
-pnpm exec turbo dev
-```
-
-You can develop a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
-
-```sh
-turbo dev --filter=web
-```
-
-Without global `turbo`:
-
-```sh
-npx turbo dev --filter=web
-yarn exec turbo dev --filter=web
-pnpm exec turbo dev --filter=web
-```
-
-### Remote Caching
-
-> [!TIP]
-> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
-
-Turborepo can use a technique known as [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
-
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
-
-```sh
-cd my-turborepo
-turbo login
-```
-
-Without global `turbo`, use your package manager:
-
-```sh
-cd my-turborepo
-npx turbo login
-yarn exec turbo login
-pnpm exec turbo login
-```
-
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
-
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
-
-```sh
-turbo link
-```
-
-Without global `turbo`:
-
-```sh
-npx turbo link
-yarn exec turbo link
-pnpm exec turbo link
-```
-
-## Useful Links
-
-Learn more about the power of Turborepo:
-
-- [Tasks](https://turborepo.dev/docs/crafting-your-repository/running-tasks)
-- [Caching](https://turborepo.dev/docs/crafting-your-repository/caching)
-- [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching)
-- [Filtering](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters)
-- [Configuration Options](https://turborepo.dev/docs/reference/configuration)
-- [CLI Usage](https://turborepo.dev/docs/reference/command-line-reference)

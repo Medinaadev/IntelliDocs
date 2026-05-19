@@ -1,8 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider     = "prisma-client"
   output       = "../src/generated/prisma"
@@ -178,7 +173,6 @@ model WorkspaceMember {
   // Es el usuario que hizo la suscripción, no necesariamente el dueño del workspace
   isSubscriber Boolean @default(false)
 
-  // Para llevar un control de la última vez que el usuario estuvo activo en el workspace
   lastActiveAt DateTime @default(now())
 
   roles WorkspaceMemberRole[]
@@ -280,7 +274,7 @@ model Folder {
   id          String  @id @default(cuid())
   name        String
   description String?
-  color       String? // Para UI: color de la carpeta
+  color       String?
 
   workspaceId String
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
@@ -321,7 +315,7 @@ enum FolderAction {
   move
   rename
   share
-  manage_permissions // Permite a un usuario gestionar permisos de esa carpeta
+  manage_permissions
 }
 
 // Permiso por ROL sobre una carpeta específica
@@ -390,7 +384,6 @@ model File {
   folderId String
   folder   Folder @relation(fields: [folderId], references: [id], onDelete: Cascade)
 
-  // Quién subió el archivo original
   uploadedById String
   uploadedBy   User   @relation("FileUploadedBy", fields: [uploadedById], references: [id])
 
@@ -403,11 +396,11 @@ model File {
   activeVersionId String?      @unique
   activeVersion   FileVersion? @relation("ActiveVersion", fields: [activeVersionId], references: [id])
 
-  // Metadatos del archivo activo (desnormalizados para queries rápidas sin JOIN)
+  // desnormalizados para evitar JOINs en cada query
   mimeType   String?
-  size       BigInt? // En bytes
+  size       BigInt? // bytes
   extension  String?
-  storageKey String? // Path en MinIO: workspaces/{wId}/files/{fileId}/{versionId}
+  storageKey String? // workspaces/{wId}/files/{fileId}/{versionId}
 
   status FileStatus @default(uploading)
 
@@ -469,19 +462,16 @@ model FileContent {
   // Texto extraído (PDF, DOCX, XLSX, OCR)
   extractedText String?
 
-  // Full-text search con PostgreSQL
-  // Se actualiza con: UPDATE "FileContent" SET "searchVector" = to_tsvector('spanish', extracted_text)
-  // El índice GIN hace que las búsquedas sean O(log n)
+  // full-text search con PostgreSQL — índice GIN sobre tsvector
   searchVector Unsupported("tsvector")?
 
   // Hueco para búsqueda semántica (pgvector) — activar cuando sea necesario
   // embedding Unsupported("vector(1536)")?
 
-  // Metadatos del documento (número de páginas para PDFs, dimensiones para imágenes, etc.)
   pageCount Int?
   wordCount Int?
-  language  String? // Detectado automáticamente: 'spanish', 'english'...
-  metadata  Json?   // Metadatos extra: dimensiones de imagen, título/autor de PDF, etc.
+  language  String? // 'spanish', 'english'...
+  metadata  Json?   // dimensiones, título, autor...
 
   // Control de indexación
   extractedAt  DateTime?
@@ -497,7 +487,7 @@ model Tag {
   id          String  @id @default(cuid())
   workspaceId String
   name        String
-  color       String? // Hex color para UI
+  color       String?
 
   createdAt DateTime @default(now())
 
@@ -556,7 +546,6 @@ model AuditLog {
   entityId   String
   entityName String? // Snapshot del nombre en el momento del evento
 
-  // Metadatos adicionales en JSON libre
   metadata Json?
 
   ipAddress String?

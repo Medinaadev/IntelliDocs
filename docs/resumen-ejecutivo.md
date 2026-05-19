@@ -1,14 +1,12 @@
 # IntelliDocs — Resumen del proyecto
 
-**Trabajo de Fin de Grado · Ingeniería Informática**
-
 ---
 
 ## ¿Qué es IntelliDocs?
 
-IntelliDocs es una aplicación web de gestión documental pensada para equipos. La idea es que un equipo pueda subir sus documentos, organizarlos en carpetas, buscar dentro del contenido de los archivos y colaborar en tiempo real, todo desde el navegador.
+IntelliDocs es una aplicación para que equipos gestionen sus documentos. Puedes subir archivos, organizarlos en carpetas, buscar dentro del contenido y ver los cambios de tus compañeros en tiempo real, todo desde el navegador.
 
-La motivé porque quería hacer algo que tuviese sentido más allá del TFG — una aplicación real con todas las partes que tiene un producto de verdad: autenticación, backend, base de datos, almacenamiento de archivos, pagos, emails y despliegue en producción.
+El proyecto nació de la asignatura de proyecto final de Aurora, que pedía hacer la documentación de una aplicación. En vez de documentar algo que no existía, decidí construirla de verdad, y aproveché la asignatura de Desarrollo web en entorno cliente para darle forma completa.
 
 **Aplicación desplegada:**
 - Frontend: https://intellidocs-web.vercel.app
@@ -168,7 +166,7 @@ S3_SECRET_KEY="minioadmin"
 S3_BUCKET="intellidocs"
 S3_REGION="us-east-1"
 
-# Opcional en local (los emails simplemente no se envían)
+# Si se deja vacío, los emails fallan en silencio y la app sigue funcionando
 RESEND_API_KEY=""
 GOOGLE_CLIENT_ID=""
 GOOGLE_CLIENT_SECRET=""

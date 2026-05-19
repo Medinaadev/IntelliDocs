@@ -67,7 +67,7 @@ Si tienes etiquetas creadas, puedes filtrar los archivos por etiqueta usando el 
 
 ### Acciones sobre archivos y carpetas
 
-Haz clic derecho (o en el menú de tres puntos) sobre cualquier archivo o carpeta para ver las opciones disponibles:
+Haz clic derecho sobre cualquier archivo o carpeta para ver las opciones disponibles:
 
 - **Renombrar**
 - **Mover** a otra carpeta
@@ -145,6 +145,20 @@ En *Planes* puedes ver qué plan tienes activo y cambiar a uno superior. Los pla
 | Free | 1 GB | 5 |
 | Pro | 100 GB | 25 |
 | Enterprise | 1 TB | 100 |
+
+> **Nota:** la aplicación está en modo test de Stripe. No se realizan cargos reales.
+
+#### Tarjetas de prueba para el pago
+
+Cuando el formulario de pago de Stripe aparezca, usa estos datos:
+
+| Campo | Valor |
+|---|---|
+| Número de tarjeta | `4242 4242 4242 4242` |
+| Fecha de expiración | Cualquier fecha futura (ej. `12/30`) |
+| CVC | Cualquier 3 dígitos (ej. `123`) |
+| Nombre | Cualquier nombre |
+| CP | Cualquier código postal (ej. `29200`) |
 
 ---
 
