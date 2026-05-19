@@ -120,7 +120,7 @@ export class AuthController {
         @Res() res: Response,
     ) {
         if (!refreshToken) {
-            throw new UnauthorizedException('No refresh token provided');
+            throw new UnauthorizedException('No autenticado');
         }
 
         try {
@@ -144,7 +144,7 @@ export class AuthController {
             });
         } catch (error) {
             this.logger.error('Error refreshing token:', error);
-            throw new UnauthorizedException('Invalid or expired refresh token');
+            throw new UnauthorizedException('Sesión inválida o expirada');
         }
     }
 

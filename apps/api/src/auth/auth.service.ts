@@ -90,11 +90,11 @@ export class AuthService {
         });
 
         if (!user) {
-            throw new UnauthorizedException('User not found');
+            throw new UnauthorizedException('Usuario no encontrado');
         }
 
         if (!user.passwordHash) {
-            throw new UnauthorizedException('Invalid credentials');
+            throw new UnauthorizedException('Credenciales inválidas');
         }
 
         const isPasswordValid = await bcrypt.compare(
@@ -103,7 +103,7 @@ export class AuthService {
         );
 
         if (!isPasswordValid) {
-            throw new UnauthorizedException('Invalid credentials');
+            throw new UnauthorizedException('Credenciales inválidas');
         }
 
         return user;
@@ -167,7 +167,7 @@ export class AuthService {
         };
     }) {
         if (!req.user) {
-            throw new UnauthorizedException('No user from google');
+            throw new UnauthorizedException('Error al iniciar sesión con Google');
         }
 
         // Obtener usuario completo de BD
@@ -180,7 +180,7 @@ export class AuthService {
         });
 
         if (!user) {
-            throw new UnauthorizedException('User not found in database');
+            throw new UnauthorizedException('Usuario no encontrado');
         }
 
         this.logger.debug(
@@ -203,9 +203,9 @@ export class AuthService {
         });
 
         if (!user) {
-            throw new UnauthorizedException('User not found');
+            throw new UnauthorizedException('Usuario no encontrado');
         } else if (!user.emailVerified) {
-            throw new UnauthorizedException('Email not verified');
+            throw new UnauthorizedException('Email no verificado');
         }
 
         const accessToken = await this.createJwtToken({
@@ -246,13 +246,13 @@ export class AuthService {
         });
 
         if (!session) {
-            throw new UnauthorizedException('Invalid refresh token');
+            throw new UnauthorizedException('Sesión inválida');
         }
 
         // Verificar expiración del refresh token
         if (session.refreshTokenExpires < new Date()) {
             await this.prisma.session.delete({ where: { id: session.id } });
-            throw new UnauthorizedException('Refresh token expired');
+            throw new UnauthorizedException('Sesión expirada');
         }
 
         // Actualizar sesión con nuevos tokens y marcar el refresh token actual como reutilizado
@@ -276,7 +276,7 @@ export class AuthService {
             if (reuse) {
                 await this.revokeUserSessions(session.userId); // Revocar todas las sesiones del usuario, posible ataque de reutilización
                 throw new UnauthorizedException(
-                    'Refresh token reuse detected. All sessions revoked.',
+                    'Sesión inválida. Todas las sesiones han sido cerradas.',
                 );
             }
 
@@ -358,7 +358,7 @@ export class AuthService {
         if (existingUser) {
             if (existingUser.emailVerified) {
                 throw new HttpException(
-                    'User already exists and email is verified',
+                    'Este email ya está registrado',
                     HttpStatus.BAD_REQUEST,
                 );
             } else {
@@ -370,7 +370,7 @@ export class AuthService {
 
                 if (existingRequests.some((req) => req.expires > new Date())) {
                     throw new HttpException(
-                        'User already exists but email is not verified. A verification email has already been sent.',
+                        'Este email ya está registrado pero no verificado. Ya se ha enviado un email de verificación.',
                         HttpStatus.BAD_REQUEST,
                     );
                 }
@@ -378,7 +378,7 @@ export class AuthService {
                 await this.sendVerificationEmail(existingUser);
 
                 throw new HttpException(
-                    'User already exists but email is not verified. A new verification email has been sent.',
+                    'Este email ya está registrado pero no verificado. Se ha enviado un nuevo email de verificación.',
                     HttpStatus.BAD_REQUEST,
                 );
             }
@@ -398,7 +398,7 @@ export class AuthService {
 
             if (!user) {
                 throw new HttpException(
-                    'Error creating user',
+                    'Error al crear el usuario',
                     HttpStatus.INTERNAL_SERVER_ERROR,
                 );
             }
@@ -409,7 +409,7 @@ export class AuthService {
             this.logger.debug(`New user registered: ${email} (ID: ${user.id})`);
             return {
                 message:
-                    'User registered successfully. Please verify your email.',
+                    'Cuenta creada. Revisa tu email para verificarla.',
             };
         });
     }
@@ -434,7 +434,7 @@ export class AuthService {
 
         if (!verficationRequest) {
             throw new HttpException(
-                'Error creating verification request',
+                'Error al crear la verificación',
                 HttpStatus.INTERNAL_SERVER_ERROR,
             );
         }
@@ -460,7 +460,7 @@ export class AuthService {
             this.logger.debug('Verification email sent:', data);
         }
 
-        return { message: 'Verification email sent' };
+        return { message: 'Email de verificación enviado' };
     }
 
     async verifyEmail(token: string) {
@@ -476,7 +476,7 @@ export class AuthService {
             !verificationRequest.user
         ) {
             throw new HttpException(
-                'Invalid or expired verification token',
+                'Enlace de verificación inválido o expirado',
                 HttpStatus.BAD_REQUEST,
             );
         }
@@ -494,7 +494,7 @@ export class AuthService {
         this.logger.debug(
             `Email verified for user ${verificationRequest.user.email}`,
         );
-        return { message: 'Email verified successfully' };
+        return { message: 'Email verificado correctamente' };
     }
 
     // Profile

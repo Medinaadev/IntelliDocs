@@ -218,7 +218,7 @@ export class WorkspaceSubscriptionService {
         });
 
         if (!user?.stripeCustomerId) {
-            throw new NotFoundException('Stripe customer not found for user');
+            throw new NotFoundException('Cliente de Stripe no encontrado');
         }
 
         const session = await this.stripeService.createBillingPortalSession(
@@ -294,7 +294,7 @@ export class WorkspaceSubscriptionService {
             },
         });
 
-        if (!user) throw new NotFoundException('User not found');
+        if (!user) throw new NotFoundException('Usuario no encontrado');
 
         let customerId = user.stripeCustomerId;
 

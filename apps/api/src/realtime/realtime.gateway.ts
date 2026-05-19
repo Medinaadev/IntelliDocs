@@ -114,7 +114,7 @@ export class RealtimeGateway
                 client.emit('refresh_token_required');
             }
 
-            throw new UnauthorizedException('No token provided');
+            throw new UnauthorizedException('No autenticado');
         }
 
         try {
@@ -122,7 +122,7 @@ export class RealtimeGateway
                 secret: jwtConstants.secret,
             });
         } catch {
-            throw new UnauthorizedException('Invalid token');
+            throw new UnauthorizedException('Token inválido');
         }
     }
 

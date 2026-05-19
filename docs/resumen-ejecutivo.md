@@ -125,7 +125,7 @@ Dos cosas que me parecen interesantes de la arquitectura:
 
 ```bash
 # 1. Clonar el repositorio
-git clone <url-del-repo>
+git clone https://github.com/Medinaadev/IntelliDocs
 cd IntelliDocs
 
 # 2. Levantar la infraestructura local (PostgreSQL, Redis, MinIO)

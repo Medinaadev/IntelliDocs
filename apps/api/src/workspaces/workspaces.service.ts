@@ -176,13 +176,13 @@ export class WorkspacesService {
 
         if (!member) {
             throw new ForbiddenException(
-                'You are not a member of this workspace',
+                'No eres miembro de este workspace',
             );
         }
 
         if (!member.isOwner) {
             throw new ForbiddenException(
-                'Only workspace owners can update the workspace image',
+                'Solo el propietario puede actualizar la imagen del workspace',
             );
         }
 
@@ -404,7 +404,7 @@ export class WorkspacesService {
         const color = dto.color?.trim() || null;
 
         if (!name) {
-            throw new BadRequestException('Folder name is required');
+            throw new BadRequestException('El nombre de la carpeta es obligatorio');
         }
 
         if (parentId) {
@@ -483,7 +483,7 @@ export class WorkspacesService {
                 where: { id: folderId, workspaceId, trashedAt: null },
                 select: { id: true },
             });
-            if (!folder) throw new NotFoundException('Folder not found');
+            if (!folder) throw new NotFoundException('Carpeta no encontrada');
         }
 
         const { storageKey, size } = await this.storage.uploadFile(
@@ -608,7 +608,7 @@ export class WorkspacesService {
         const folder = await this.prisma.folder.findUnique({
             where: { id: folderId, workspaceId, trashedAt: null },
         });
-        if (!folder) throw new NotFoundException('Folder not found');
+        if (!folder) throw new NotFoundException('Carpeta no encontrada');
 
         if (dto.name) {
             const name = dto.name.trim();
@@ -653,7 +653,7 @@ export class WorkspacesService {
         const file = await this.prisma.file.findUnique({
             where: { id: fileId, workspaceId, trashedAt: null },
         });
-        if (!file) throw new NotFoundException('File not found');
+        if (!file) throw new NotFoundException('Archivo no encontrado');
 
         if (dto.name) {
             const name = dto.name.trim();
@@ -696,7 +696,7 @@ export class WorkspacesService {
         const folder = await this.prisma.folder.findUnique({
             where: { id: folderId, workspaceId, trashedAt: null },
         });
-        if (!folder) throw new NotFoundException('Folder not found');
+        if (!folder) throw new NotFoundException('Carpeta no encontrada');
 
         await this.prisma.folder.update({
             where: { id: folderId },
@@ -718,7 +718,7 @@ export class WorkspacesService {
         const file = await this.prisma.file.findUnique({
             where: { id: fileId, workspaceId, trashedAt: null },
         });
-        if (!file) throw new NotFoundException('File not found');
+        if (!file) throw new NotFoundException('Archivo no encontrado');
 
         await this.prisma.file.update({
             where: { id: fileId },
@@ -838,9 +838,9 @@ export class WorkspacesService {
         const folder = await this.prisma.folder.findUnique({
             where: { id: folderId, workspaceId },
         });
-        if (!folder) throw new NotFoundException('Folder not found');
+        if (!folder) throw new NotFoundException('Carpeta no encontrada');
         if (!folder.trashedAt)
-            throw new BadRequestException('Folder is not in trash');
+            throw new BadRequestException('La carpeta no está en la papelera');
 
         await this.prisma.folder.update({
             where: { id: folderId },
@@ -862,9 +862,9 @@ export class WorkspacesService {
         const file = await this.prisma.file.findUnique({
             where: { id: fileId, workspaceId },
         });
-        if (!file) throw new NotFoundException('File not found');
+        if (!file) throw new NotFoundException('Archivo no encontrado');
         if (!file.trashedAt)
-            throw new BadRequestException('File is not in trash');
+            throw new BadRequestException('El archivo no está en la papelera');
 
         await this.prisma.file.update({
             where: { id: fileId },
@@ -890,10 +890,10 @@ export class WorkspacesService {
         const folder = await this.prisma.folder.findUnique({
             where: { id: folderId, workspaceId },
         });
-        if (!folder) throw new NotFoundException('Folder not found');
+        if (!folder) throw new NotFoundException('Carpeta no encontrada');
         if (!folder.trashedAt)
             throw new BadRequestException(
-                'Folder must be in trash before permanent deletion',
+                'La carpeta debe estar en la papelera antes de eliminarla definitivamente',
             );
 
         // Guardar nombre antes de borrar para el log
@@ -919,10 +919,10 @@ export class WorkspacesService {
             where: { id: fileId, workspaceId },
             include: { versions: { select: { storageKey: true } } },
         });
-        if (!file) throw new NotFoundException('File not found');
+        if (!file) throw new NotFoundException('Archivo no encontrado');
         if (!file.trashedAt)
             throw new BadRequestException(
-                'File must be in trash before permanent deletion',
+                'El archivo debe estar en la papelera antes de eliminarlo definitivamente',
             );
 
         // Eliminar todos los objetos de storage y luego el registro DB
@@ -989,7 +989,7 @@ export class WorkspacesService {
                 versions: { orderBy: { versionNumber: 'desc' }, take: 1 },
             },
         });
-        if (!existing) throw new NotFoundException('File not found');
+        if (!existing) throw new NotFoundException('Archivo no encontrado');
 
         const { storageKey, size } = await this.storage.uploadFile(
             file,
@@ -1057,7 +1057,7 @@ export class WorkspacesService {
                     _count: { select: { files: true, children: true } },
                 },
             });
-            if (!folder) throw new NotFoundException('Folder not found');
+            if (!folder) throw new NotFoundException('Carpeta no encontrada');
             return {
                 type: 'folder' as const,
                 id: folder.id,
@@ -1078,7 +1078,7 @@ export class WorkspacesService {
                 _count: { select: { versions: true } },
             },
         });
-        if (!file) throw new NotFoundException('File not found');
+        if (!file) throw new NotFoundException('Archivo no encontrado');
         return {
             type: 'file' as const,
             id: file.id,
@@ -1099,7 +1099,7 @@ export class WorkspacesService {
             where: { id: fileId, workspaceId, trashedAt: null },
             select: { id: true, name: true, activeVersionId: true },
         });
-        if (!file) throw new NotFoundException('File not found');
+        if (!file) throw new NotFoundException('Archivo no encontrado');
 
         const versions = await this.prisma.fileVersion.findMany({
             where: { fileId },
@@ -1163,7 +1163,7 @@ export class WorkspacesService {
             where: { id: versionId, fileId, file: { workspaceId } },
             select: { id: true, storageKey: true, versionNumber: true },
         });
-        if (!version) throw new NotFoundException('Version not found');
+        if (!version) throw new NotFoundException('Versión no encontrada');
 
         const url = await this.storage.getPresignedUrl(version.storageKey);
         return { url, versionNumber: version.versionNumber };
@@ -1190,7 +1190,7 @@ export class WorkspacesService {
             where: { workspaceId_name: { workspaceId, name } },
         });
         if (existing)
-            throw new ConflictException('A tag with this name already exists');
+            throw new ConflictException('Ya existe una etiqueta con ese nombre');
         const tag = await this.prisma.tag.create({
             data: { workspaceId, name, color: dto.color ?? null },
         });
@@ -1207,7 +1207,7 @@ export class WorkspacesService {
         const tag = await this.prisma.tag.findUnique({
             where: { id: tagId, workspaceId },
         });
-        if (!tag) throw new NotFoundException('Tag not found');
+        if (!tag) throw new NotFoundException('Etiqueta no encontrada');
         if (dto.name) {
             const name = dto.name.trim();
             const conflict = await this.prisma.tag.findFirst({
@@ -1215,7 +1215,7 @@ export class WorkspacesService {
             });
             if (conflict)
                 throw new ConflictException(
-                    'A tag with this name already exists',
+                    'Ya existe una etiqueta con ese nombre',
                 );
         }
         const updated = await this.prisma.tag.update({
@@ -1239,7 +1239,7 @@ export class WorkspacesService {
         const tag = await this.prisma.tag.findUnique({
             where: { id: tagId, workspaceId },
         });
-        if (!tag) throw new NotFoundException('Tag not found');
+        if (!tag) throw new NotFoundException('Etiqueta no encontrada');
         await this.prisma.tag.delete({ where: { id: tagId } });
         return { success: true };
     }
@@ -1248,7 +1248,7 @@ export class WorkspacesService {
         const tag = await this.prisma.tag.findUnique({
             where: { id: tagId, workspaceId },
         });
-        if (!tag) throw new NotFoundException('Tag not found');
+        if (!tag) throw new NotFoundException('Etiqueta no encontrada');
         const fileTags = await this.prisma.fileTag.findMany({
             where: { tagId },
             include: {
@@ -1293,11 +1293,11 @@ export class WorkspacesService {
         const file = await this.prisma.file.findUnique({
             where: { id: fileId, workspaceId, trashedAt: null },
         });
-        if (!file) throw new NotFoundException('File not found');
+        if (!file) throw new NotFoundException('Archivo no encontrado');
         const tag = await this.prisma.tag.findUnique({
             where: { id: dto.tagId, workspaceId },
         });
-        if (!tag) throw new NotFoundException('Tag not found');
+        if (!tag) throw new NotFoundException('Etiqueta no encontrada');
         await this.prisma.fileTag.upsert({
             where: { fileId_tagId: { fileId, tagId: dto.tagId } },
             create: { fileId, tagId: dto.tagId },
@@ -1315,7 +1315,7 @@ export class WorkspacesService {
             where: { fileId_tagId: { fileId, tagId } },
         });
         if (!fileTag)
-            throw new NotFoundException('Tag not assigned to this file');
+            throw new NotFoundException('Esta etiqueta no está asignada al archivo');
         await this.prisma.fileTag.delete({
             where: { fileId_tagId: { fileId, tagId } },
         });
@@ -1326,7 +1326,7 @@ export class WorkspacesService {
         const file = await this.prisma.file.findUnique({
             where: { id: fileId, workspaceId, trashedAt: null },
         });
-        if (!file) throw new NotFoundException('File not found');
+        if (!file) throw new NotFoundException('Archivo no encontrado');
         const fileTags = await this.prisma.fileTag.findMany({
             where: { fileId },
             include: { tag: { select: { id: true, name: true, color: true } } },

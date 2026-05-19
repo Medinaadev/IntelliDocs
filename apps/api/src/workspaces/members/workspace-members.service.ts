@@ -134,7 +134,7 @@ export class WorkspaceMembersService {
             where: { id: workspaceId },
             select: { name: true, seatsLimit: true },
         });
-        if (!workspace) throw new NotFoundException('Workspace not found');
+        if (!workspace) throw new NotFoundException('Workspace no encontrado');
 
         const memberCount = await this.countMembers(workspaceId);
         if (memberCount >= workspace.seatsLimit)

@@ -18,18 +18,18 @@ export class WorkspaceMemberGuard implements CanActivate {
         const request = context.switchToHttp().getRequest<JwtRequest>();
 
         if (!request.user) {
-            throw new UnauthorizedException('User not authenticated');
+            throw new UnauthorizedException('No autenticado');
         }
 
         const userId = request.user.id;
         const workspaceId = request.params.workspaceId;
 
         if (!workspaceId) {
-            throw new UnauthorizedException('Workspace ID is required');
+            throw new UnauthorizedException('ID de workspace requerido');
         }
 
         if (!userId) {
-            throw new UnauthorizedException('User ID is required');
+            throw new UnauthorizedException('ID de usuario requerido');
         }
 
         const isMember = await this.workspaceMembersService.isMember(
@@ -38,7 +38,7 @@ export class WorkspaceMemberGuard implements CanActivate {
         );
 
         if (!isMember) {
-            throw new ForbiddenException('You do not belong to this workspace');
+            throw new ForbiddenException('No perteneces a este workspace');
         }
 
         return true;

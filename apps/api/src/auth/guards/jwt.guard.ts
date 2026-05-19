@@ -41,7 +41,7 @@ export class JwtGuard implements CanActivate {
 
         if (!accessToken) {
             if (!refreshToken) {
-                throw new UnauthorizedException('No access token provided');
+                throw new UnauthorizedException('No autenticado');
             }
 
             try {
@@ -55,7 +55,7 @@ export class JwtGuard implements CanActivate {
                 if (error instanceof UnauthorizedException) throw error;
                 Logger.error('JWT validation error', error.stack);
                 throw new UnauthorizedException(
-                    'Invalid or expired refresh token',
+                    'Sesión inválida o expirada',
                 );
             }
         }
@@ -66,9 +66,9 @@ export class JwtGuard implements CanActivate {
             });
         } catch (error) {
             if (error instanceof TokenExpiredError) {
-                throw new UnauthorizedException('Token expired');
+                throw new UnauthorizedException('Sesión expirada');
             }
-            throw new UnauthorizedException('Invalid access token');
+            throw new UnauthorizedException('Token de acceso inválido');
         }
 
         const session = await this.prisma.session.findUnique({
@@ -77,15 +77,15 @@ export class JwtGuard implements CanActivate {
         });
 
         if (!session) {
-            throw new UnauthorizedException('Session not found');
+            throw new UnauthorizedException('Sesión no encontrada');
         }
 
         if (!session.user) {
-            throw new UnauthorizedException('User not found for this session');
+            throw new UnauthorizedException('Usuario no encontrado');
         }
 
         if (session.accessTokenExpires < new Date()) {
-            throw new UnauthorizedException('Session expired');
+            throw new UnauthorizedException('Sesión expirada');
         }
 
         request.user = {
