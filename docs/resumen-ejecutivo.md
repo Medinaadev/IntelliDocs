@@ -1,75 +1,76 @@
-# IntelliDocs — Resumen Ejecutivo
+# IntelliDocs — Resumen del proyecto
 
 **Trabajo de Fin de Grado · Ingeniería Informática**
 
 ---
 
-## 1. ¿Qué es IntelliDocs?
+## ¿Qué es IntelliDocs?
 
-IntelliDocs es una plataforma web de gestión documental colaborativa. Permite a equipos de trabajo almacenar, organizar, buscar y compartir documentos desde el navegador, sin necesidad de instalar ningún software.
+IntelliDocs es una aplicación web de gestión documental pensada para equipos. La idea es que un equipo pueda subir sus documentos, organizarlos en carpetas, buscar dentro del contenido de los archivos y colaborar en tiempo real, todo desde el navegador.
 
-El proyecto nació con el objetivo de construir, desde cero, una aplicación moderna de nivel profesional que cubra el ciclo completo de un producto real: diseño, desarrollo frontend y backend, infraestructura, autenticación, tiempo real, pagos y despliegue en producción.
+La motivé porque quería hacer algo que tuviese sentido más allá del TFG — una aplicación real con todas las partes que tiene un producto de verdad: autenticación, backend, base de datos, almacenamiento de archivos, pagos, emails y despliegue en producción.
 
----
-
-## 2. Funcionalidades principales
-
-| Área | Descripción |
-|---|---|
-| **Autenticación** | Registro con email/contraseña o Google OAuth 2.0. Verificación de email obligatoria. Sistema de sesiones con JWT y renovación automática de tokens. |
-| **Workspaces** | Espacios de trabajo aislados por equipo. Cada workspace tiene sus propios miembros, archivos y configuración. |
-| **Drive** | Sistema de archivos virtual con carpetas jerarquizadas. Subida de hasta 4 archivos simultáneos, vista en cuadrícula, búsqueda de texto completo dentro del contenido de los documentos. |
-| **Procesamiento** | Los archivos subidos se procesan automáticamente en segundo plano: extracción de texto (PDFs), dimensiones (imágenes), checksum SHA-256 y conteo de palabras. |
-| **Colaboración** | Invitación de miembros por email, control de acceso por roles y permisos granulares por carpeta. |
-| **Tiempo real** | Cualquier cambio en el drive, miembros o etiquetas se refleja al instante en todos los usuarios conectados sin necesidad de recargar la página. |
-| **Etiquetas** | Sistema de tags con color personalizable para categorizar archivos. |
-| **Papelera** | Eliminación suave con posibilidad de restaurar o eliminar definitivamente. |
-| **Actividad** | Registro de auditoría completo: quién hizo qué y cuándo. |
-| **Planes y pagos** | Integración con Stripe para gestionar suscripciones (Free, Pro, Enterprise). Límites de almacenamiento y miembros según el plan. |
+**Aplicación desplegada:**
+- Frontend: https://intellidocs-web.vercel.app
+- API: https://intellidocs-api.up.railway.app
 
 ---
 
-## 3. Stack tecnológico
+## Funcionalidades
 
-El proyecto está organizado como un **monorepo** con dos aplicaciones independientes: frontend y backend.
+- **Registro e inicio de sesión** — con email y contraseña o con Google. El registro requiere verificar el email antes de poder entrar.
+- **Workspaces** — cada equipo tiene su propio espacio de trabajo con sus archivos y miembros. Un usuario puede pertenecer a varios workspaces.
+- **Drive** — sistema de archivos con carpetas anidadas. Se pueden subir hasta 4 archivos a la vez, buscar por nombre o por el contenido del documento, y filtrar por etiquetas.
+- **Procesamiento de archivos** — cuando subes un PDF o una imagen, la aplicación extrae el texto, cuenta las palabras, obtiene metadatos (número de páginas, dimensiones) y calcula un checksum. Todo esto en segundo plano para no bloquear la subida.
+- **Tiempo real** — si dos personas están en el mismo workspace, cualquier cambio (nuevo archivo, carpeta renombrada, miembro añadido) aparece al instante sin recargar la página.
+- **Miembros y permisos** — el propietario puede invitar a otros usuarios por email y configurar permisos por carpeta.
+- **Etiquetas** — se pueden crear etiquetas de colores y asignarlas a los archivos para organizarlos.
+- **Papelera** — los archivos eliminados van a la papelera y se pueden recuperar antes de borrarlos definitivamente.
+- **Actividad** — registro de todo lo que pasa en el workspace: quién subió qué, quién borró qué y cuándo.
+- **Planes y pagos** — integración con Stripe para gestionar suscripciones. El plan determina cuánto almacenamiento y cuántos miembros puede tener el workspace.
+
+---
+
+## Stack tecnológico
+
+El proyecto está montado como un monorepo con Turborepo, lo que me permite tener el frontend y el backend en el mismo repositorio compartiendo tipos TypeScript.
 
 ### Frontend — `apps/web`
 
-| Tecnología | Uso |
+| Tecnología | Por qué la usé |
 |---|---|
-| React 19 | Framework UI |
-| TanStack Router | Enrutamiento basado en archivos |
-| TanStack React Query | Sincronización de datos con el servidor |
-| Zustand | Estado global de la aplicación |
-| Tailwind CSS 4 + shadcn/ui | Estilos y componentes |
-| Socket.IO Client | Comunicación en tiempo real |
-| Vite | Bundler y servidor de desarrollo |
-| Zod | Validación de esquemas |
+| React 19 | Framework de UI |
+| TanStack Router | Enrutamiento basado en archivos con tipado completo |
+| TanStack React Query | Gestión del estado del servidor y caché |
+| Zustand | Estado global ligero (sesión, workspace activo...) |
+| Tailwind CSS 4 + shadcn/ui | Estilos y componentes de UI |
+| Socket.IO Client | Conexión WebSocket para el tiempo real |
+| Vite | Bundler rápido |
+| Zod | Validación de formularios y esquemas |
 
 ### Backend — `apps/api`
 
-| Tecnología | Uso |
+| Tecnología | Por qué la usé |
 |---|---|
-| NestJS 11 (Node.js) | Framework backend modular |
-| Prisma 7 | ORM y migraciones de base de datos |
+| NestJS 11 | Framework de Node.js modular, buena separación de responsabilidades |
+| Prisma 7 | ORM con migraciones y tipado generado automáticamente |
 | PostgreSQL | Base de datos principal |
-| Redis | Cola de tareas y throttling distribuido |
-| BullMQ | Cola de procesamiento de archivos |
-| Socket.IO | WebSockets para tiempo real |
-| Passport.js | Autenticación (JWT, Local, Google OAuth) |
-| AWS S3 / MinIO | Almacenamiento de archivos |
+| Redis | Cola de jobs y throttling distribuido |
+| BullMQ | Procesamiento asíncrono de archivos |
+| Socket.IO | WebSockets para el tiempo real |
+| Passport.js | Autenticación con JWT, Local y Google OAuth 2.0 |
+| Cloudflare R2 | Almacenamiento de archivos (compatible con S3) |
 | Stripe | Pagos y suscripciones |
-| Resend | Envío de emails transaccionales |
+| Resend | Emails transaccionales (verificación, invitaciones) |
 
 ### Paquetes compartidos — `packages/`
 
-- `@intellidocs/types` — Tipos TypeScript compartidos entre frontend y backend
-- `@intellidocs/ui` — Librería de componentes reutilizables
-- `@intellidocs/eslint-config` y `typescript-config` — Configuraciones comunes
+- `@intellidocs/types` — tipos TypeScript compartidos entre el frontend y el backend
+- `@intellidocs/ui` — componentes React reutilizables
 
 ---
 
-## 4. Arquitectura
+## Arquitectura
 
 ```
 ┌──────────────────────────────────────────┐
@@ -88,35 +89,35 @@ El proyecto está organizado como un **monorepo** con dos aplicaciones independi
                 │                     │
      ┌──────────┼──────────┐          │
      ▼          ▼          ▼          ▼
-PostgreSQL    Redis     MinIO/S3   PgPubSub
+PostgreSQL    Redis     R2/S3      PgPubSub
 (datos)     (colas)   (archivos)  (triggers)
 ```
 
-**Flujo de tiempo real:** Los triggers de PostgreSQL detectan cambios en la base de datos → los publica mediante `PgPubSub` → el módulo `Realtime` los reenvía por Socket.IO a los clientes suscritos al canal correspondiente.
+Dos cosas que me parecen interesantes de la arquitectura:
 
-**Procesamiento asíncrono:** Al subir un archivo, se encola un job en Redis con BullMQ. Un worker independiente lo procesa (extrae texto, metadatos, etc.) sin bloquear la respuesta HTTP.
+**Tiempo real con PgPubSub:** en vez de hacer polling o gestionar manualmente los eventos, puse triggers en PostgreSQL que publican un mensaje cada vez que cambia una fila. El backend los escucha, decide a qué usuarios les afecta y se lo manda por WebSocket. Así el frontend solo tiene que suscribirse a un canal y React Query invalida la caché automáticamente.
+
+**Procesamiento asíncrono con BullMQ:** cuando subes un archivo, la API lo guarda en R2 y encola un job en Redis. Un worker independiente lo procesa sin que el usuario tenga que esperar. El estado del archivo pasa de `uploading` → `processing` → `ready` (o `error` si algo falla), y el frontend lo refleja en tiempo real.
 
 ---
 
-## 5. Despliegue
-
-La aplicación está desplegada en producción con los siguientes servicios:
+## Despliegue
 
 | Componente | Servicio |
 |---|---|
-| Frontend | **Vercel** (CDN global, HTTPS automático) |
-| Backend + API | **Railway** (contenedor Node.js) |
-| Base de datos | **Railway** PostgreSQL plugin |
-| Redis | **Railway** Redis plugin |
-| Almacenamiento | **Cloudflare R2** (compatible S3, sin coste de egress) |
-| Email | **Resend** |
-| Pagos | **Stripe** |
+| Frontend | **Vercel** — https://intellidocs-web.vercel.app |
+| Backend | **Railway** — https://intellidocs-api.up.railway.app |
+| Base de datos | Railway PostgreSQL plugin |
+| Redis | Railway Redis plugin |
+| Almacenamiento | Cloudflare R2 |
+| Email | Resend |
+| Pagos | Stripe (modo test) |
 
 ---
 
-## 6. Cómo ejecutar el proyecto en local
+## Ejecutar en local
 
-### Requisitos previos
+### Requisitos
 
 - Node.js ≥ 22
 - pnpm (`npm install -g pnpm`)
@@ -129,85 +130,77 @@ La aplicación está desplegada en producción con los siguientes servicios:
 git clone <url-del-repo>
 cd IntelliDocs
 
-# 2. Levantar infraestructura local (PostgreSQL, Redis, MinIO)
+# 2. Levantar la infraestructura local (PostgreSQL, Redis, MinIO)
 docker-compose up -d
 
 # 3. Instalar dependencias
 pnpm install
 
-# 4. Configurar variables de entorno
-# Copiar apps/api/.env.example a apps/api/.env y rellenar los valores
+# 4. Crear el archivo de entorno
+cp apps/api/.env.example apps/api/.env
+# Editar apps/api/.env con los valores locales
 
-# 5. Ejecutar migraciones de base de datos
-cd apps/api
-pnpm prisma migrate dev
+# 5. Ejecutar migraciones
+cd apps/api && pnpm prisma migrate dev && cd ../..
 
-# 6. Volver a la raíz e iniciar ambas aplicaciones
-cd ../..
+# 6. Arrancar todo
 pnpm dev
 ```
 
-La aplicación quedará disponible en:
-- **Frontend**: `http://localhost:5173`
-- **API**: `http://localhost:3000`
-- **MinIO (almacenamiento)**: `http://localhost:9001`
+Una vez arrancado:
+- Frontend: http://localhost:5173
+- API: http://localhost:3000
+- MinIO (panel de archivos): http://localhost:9001
 
 ### Variables de entorno mínimas (`apps/api/.env`)
 
 ```env
 DATABASE_URL="postgresql://postgres:postgres@localhost:5432/intellidocs"
 REDIS_URL="redis://localhost:6379"
-JWT_SECRET="un-secreto-largo"
+JWT_SECRET="cualquier-string-largo"
+BACKEND_URL="http://localhost:3000"
 FRONTEND_URL="http://localhost:5173"
 
-# S3/MinIO local
+# MinIO local
 S3_ENDPOINT="http://localhost:9000"
-S3_ACCESS_KEY_ID="minioadmin"
-S3_SECRET_ACCESS_KEY="minioadmin"
-S3_BUCKET_NAME="intellidocs"
+S3_ACCESS_KEY="minioadmin"
+S3_SECRET_KEY="minioadmin"
+S3_BUCKET="intellidocs"
 S3_REGION="us-east-1"
 
-# Resend (puede dejarse vacío en local, los emails no se envían)
+# Opcional en local (los emails simplemente no se envían)
 RESEND_API_KEY=""
-
-# Google OAuth (opcional en local)
 GOOGLE_CLIENT_ID=""
 GOOGLE_CLIENT_SECRET=""
-
-# Stripe (opcional en local)
 STRIPE_SECRET_KEY=""
 STRIPE_WEBHOOK_SECRET=""
 ```
 
 ---
 
-## 7. Estructura del repositorio
+## Estructura del repositorio
 
 ```
 IntelliDocs/
 ├── apps/
 │   ├── api/                  # Backend NestJS
-│   │   ├── prisma/           # Schema y migraciones de BD
+│   │   ├── prisma/           # Schema y migraciones
 │   │   └── src/
 │   │       ├── auth/         # Autenticación y sesiones
 │   │       ├── workspaces/   # Drive, miembros, etiquetas
 │   │       ├── processing/   # Cola de procesamiento
 │   │       ├── realtime/     # WebSockets
-│   │       ├── storage/      # S3/MinIO
+│   │       ├── storage/      # Cloudflare R2
 │   │       └── stripe/       # Pagos
-│   └── web/                  # Frontend React
+│   └── web/                  # Frontend React + Vite
 │       └── src/
 │           ├── routes/       # Páginas (file-based routing)
 │           ├── components/   # Componentes UI
 │           ├── stores/       # Estado global (Zustand)
-│           └── lib/          # Utilidades y queries
+│           └── lib/          # API client, queries, utilidades
 ├── packages/
-│   ├── types/                # Tipos compartidos
+│   ├── types/                # Tipos TypeScript compartidos
 │   └── ui/                   # Componentes compartidos
-├── docker-compose.yml        # Infraestructura local
-└── turbo.json                # Configuración del monorepo
+├── docker-compose.yml
+└── turbo.json
 ```
-
----
-
-*Documento generado para evaluación académica del TFG.*

@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { AppController } from './app.controller';
 import { AuthModule } from './auth/auth.module';
 import { ConfigModule } from '@nestjs/config';
 import { UsersModule } from './users/users.module';
@@ -70,7 +71,7 @@ function makeRedis(extra: object = {}) {
         WorkspacesModule,
         ProcessingModule,
     ],
-    controllers: [],
+    controllers: [AppController],
     providers: [
         {
             provide: APP_GUARD,
