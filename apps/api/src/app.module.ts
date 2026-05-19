@@ -48,7 +48,6 @@ import Redis from 'ioredis';
         BullModule.forRoot({
             connection: new Redis(process.env.REDIS_URL + '?family=0', {
                 maxRetriesPerRequest: null,
-                tls: { rejectUnauthorized: false },
             }),
         }),
         PgPubSubModule.forRoot({
