@@ -78,6 +78,7 @@ pnpm dev
 - [`docs/resumen-ejecutivo.md`](docs/resumen-ejecutivo.md) — descripción técnica del proyecto
 - [`docs/guia-usuario.md`](docs/guia-usuario.md) — guía de uso de la aplicación
 - [`docs/decisiones-tecnicas.md`](docs/decisiones-tecnicas.md) — por qué se eligió cada tecnología
+- [`docs/manual-despliegue.md`](docs/manual-despliegue.md) — cómo desplegar en local y en producción
 
 ---
 

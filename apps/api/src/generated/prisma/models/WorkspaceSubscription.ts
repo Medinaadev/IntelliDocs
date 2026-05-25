@@ -287,7 +287,7 @@ export type WorkspaceSubscriptionGroupByOutputType = {
   _max: WorkspaceSubscriptionMaxAggregateOutputType | null
 }
 
-type GetWorkspaceSubscriptionGroupByPayload<T extends WorkspaceSubscriptionGroupByArgs> = Prisma.PrismaPromise<
+export type GetWorkspaceSubscriptionGroupByPayload<T extends WorkspaceSubscriptionGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<WorkspaceSubscriptionGroupByOutputType, T['by']> &
       {
