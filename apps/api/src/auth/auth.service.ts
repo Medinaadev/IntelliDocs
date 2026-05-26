@@ -255,32 +255,27 @@ export class AuthService {
             throw new UnauthorizedException('Sesión expirada');
         }
 
-        // Actualizar sesión con nuevos tokens y marcar el refresh token actual como reutilizado
+        // Detectar reutilización antes de la transacción para evitar abortar el bloque
+        const alreadyUsed = await this.prisma.refreshTokenReuse.findUnique({
+            where: { oldToken: refreshToken },
+        });
+
+        if (alreadyUsed) {
+            await this.revokeUserSessions(session.userId);
+            throw new UnauthorizedException(
+                'Sesión inválida. Todas las sesiones han sido cerradas.',
+            );
+        }
+
+        // Registrar token usado y rotar sesión de forma atómica
         return await this.prisma.$transaction(async (tx) => {
-            let reuse = false;
+            await tx.refreshTokenReuse.create({
+                data: {
+                    sessionId: session.id,
+                    oldToken: refreshToken,
+                },
+            });
 
-            try {
-                await tx.refreshTokenReuse.create({
-                    data: {
-                        sessionId: session.id,
-                        oldToken: refreshToken, // Guardar el token antiguo para detectar reutilización
-                    },
-                });
-            } catch (error) {
-                if (error.code === 'P2002') {
-                    // Violación de restricción única, el token ya fue registrado como reutilizado
-                    reuse = true; // Se ha detectado reutilización del refresh token
-                }
-            }
-
-            if (reuse) {
-                await this.revokeUserSessions(session.userId); // Revocar todas las sesiones del usuario, posible ataque de reutilización
-                throw new UnauthorizedException(
-                    'Sesión inválida. Todas las sesiones han sido cerradas.',
-                );
-            }
-
-            // Generar nuevos tokens
             const newAccessToken = await this.createJwtToken({
                 id: session.user.id,
                 email: session.user.email,
@@ -293,17 +288,17 @@ export class AuthService {
                 data: {
                     accessToken: newAccessToken,
                     refreshToken: newRefreshToken,
-                    accessTokenExpires: new Date(Date.now() + 15 * 60 * 1000), // 15 minutos
+                    accessTokenExpires: new Date(Date.now() + 15 * 60 * 1000),
                     refreshTokenExpires: new Date(
                         Date.now() + 30 * 24 * 60 * 60 * 1000,
-                    ), // 30 días
+                    ),
                     rotationCounter: session.rotationCounter + 1,
                 },
             });
 
             this.logger.debug(
                 `Tokens refreshed for user: ${session.user.email} (ID: ${session.user.id})`,
-            ); // Log de refresco de tokens exitoso
+            );
 
             return {
                 accessToken: newAccessToken,
